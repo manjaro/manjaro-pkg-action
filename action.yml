@@ -123,9 +123,12 @@ runs:
     - name: prepare assets transaction
       shell: bash -O extglob {0}
       run: |
-        ver=$(grep ^pkgver= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
-        rel=$(grep ^pkgrel= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
+        build_dir=/var/lib/chrootbuild/build/${{ inputs.pkgname }}
+        echo "builc_dir=$build_dir"
+        ver=$(grep ^pkgver= ${build_dir}/PKGBUILD | cut -d'=' -f2)
+        rel=$(grep ^pkgrel= ${build_dir}/PKGBUILD | cut -d'=' -f2)
         tag=${ver}-${rel}
+        echo "tag=$tag"
         name=$(find . -name ${{ inputs.pkgname }}*.zst)
         echo "name=$name"
         arch=$(echo ${name} | rev | cut -d- -f1 | rev | cut -d. -f1)
@@ -141,7 +144,8 @@ runs:
     - name: publish package
       shell: bash -O extglob {0}
       run: |
+        release=${{ inputs.pkgname }}-${{ env.TAG }}
         echo ${{ github.token }} | gh auth login --with-token
-        gh release create ${{ env.TAG }} --title ${{ env.TAG }} --repo ${{ github.repository }} --notes "automated release" || echo "release already exists"
-        GITHUB_LINK=https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ env.TAG }}
-        gh release upload ${{ env.TAG }} --repo ${GITHUB_REPOSITORY} --clobber ./*.zst ./*.sig ./*.tar
+        gh release create ${release} --title ${release} --repo ${{ github.repository }} --notes "automated release" || echo "release already exists"
+        GITHUB_LINK=https://github.com/${GITHUB_REPOSITORY}/releases/download/${release}
+        gh release upload ${release} --repo ${GITHUB_REPOSITORY} --clobber ./*.zst ./*.sig ./*.tar
