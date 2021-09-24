@@ -137,12 +137,12 @@ runs:
         source /var/lib/chrootbuild/build/${{ inputs.package }}/PKGBUILD
         tag=${pkgver}-${pkgrel}
         for p in ${pkgname[@]}; do
-          name=$(find . -name ${p}*.zst)
+          name=$(find . -name ${p}-${tag}*.zst)
           arch=$(echo ${name} | rev | cut -d- -f1 | rev | cut -d. -f1)
-          file=${pkgname}-${tag}-${arch}
+          file=${p}-${tag}-${arch}
           btf=${file}.yml # boxit transaction file
-          echo "sha256_pkg: $(sha256sum ${pkgname}*.zst | cut -d' ' -f1)" > ${btf}
-          echo "sha256_sig: $(sha256sum ${pkgname}*.sig | cut -d' ' -f1)" >> ${btf}
+          echo "sha256_pkg: $(sha256sum ${p}*.zst | cut -d' ' -f1)" > ${btf}
+          echo "sha256_sig: $(sha256sum ${p}*.sig | cut -d' ' -f1)" >> ${btf}
           [[ "${p}" == "mhwd-nvidia" ]] && _repo=core || _repo=${{ inputs.repo }}
           echo "repository: ${_repo}" >> ${btf}
           echo "branch: ${{ inputs.branch }}" >> ${btf}
