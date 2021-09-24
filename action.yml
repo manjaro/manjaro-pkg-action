@@ -70,6 +70,7 @@ runs:
         sudo mkdir -p /etc/pacman.d
         sudo touch /etc/pacman.d/mirrorlist
         popd
+        sudo rm -rf pacman
     - name: install keyrings
       shell: bash
       run: |
@@ -80,6 +81,7 @@ runs:
         sudo install -m0644 manjaro-trusted /usr/share/pacman/keyrings/
         sudo install -m0644 manjaro-trusted /usr/share/pacman/keyrings/
         popd
+        sudo rm -rf manjaro-keyring
          
         sudo git clone --depth 1 https://gitlab.archlinux.org/archlinux/archlinux-keyring.git
         pushd archlinux-keyring
@@ -87,6 +89,7 @@ runs:
         sudo install -m0644 archlinux-trusted /usr/share/pacman/keyrings/
         sudo install -m0644 archlinux-revoked /usr/share/pacman/keyrings/
         popd
+        sudo rm -rf arhclinux-keyring
         sudo pacman-key --init
         sudo pacman-key --populate archlinux manjaro
     - name: install manjaro-chrootbuild
@@ -97,6 +100,7 @@ runs:
         sudo ./install.sh
         echo "PACKAGER = Manjaro Build Server <build@manjaro.org>" | sudo tee -a /etc/makepkg.conf > /dev/null
         popd
+        sudo rm -rf manjaro-chrootbuild
     - name: clone package repo
       shell: bash
       run: |
