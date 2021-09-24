@@ -146,7 +146,7 @@ runs:
           [[ "${p}" == "mhwd-nvidia" ]] && _repo=core || _repo=${{ inputs.repo }}
           echo "repository: ${_repo}" >> ${btf}
           echo "branch: ${{ inputs.branch }}" >> ${btf}
-          tar -czvf ${file}.tar ./${_file}*.zst ./${file}*.sig ./${btf}
+          tar -czvf ${file}.tar ./${file}*.zst ./${file}*.sig ./${btf}
         done
         echo "TAG=${tag}" >>$GITHUB_ENV
     - name: publish package
