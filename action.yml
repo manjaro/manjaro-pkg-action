@@ -143,7 +143,8 @@ runs:
           btf=${file}.yml # boxit transaction file
           echo "sha256_pkg: $(sha256sum ${pkgname}*.zst | cut -d' ' -f1)" > ${btf}
           echo "sha256_sig: $(sha256sum ${pkgname}*.sig | cut -d' ' -f1)" >> ${btf}
-          echo "repository: ${{ inputs.repo }}" >> ${btf}
+          [[ "${p}" == "mhwd-nvidia" ]] && _repo=core || _repo=${{ inputs.repo }}
+          echo "repository: ${_repo}" >> ${btf}
           echo "branch: ${{ inputs.branch }}" >> ${btf}
           tar -czvf ${file}.tar ./${_file}*.zst ./${file}*.sig ./${btf}
         done
