@@ -124,17 +124,12 @@ runs:
       shell: bash -O extglob {0}
       run: |
         build_dir=/var/lib/chrootbuild/build/${{ inputs.pkgname }}
-        echo "builc_dir=$build_dir"
         ver=$(grep ^pkgver= ${build_dir}/PKGBUILD | cut -d'=' -f2)
         rel=$(grep ^pkgrel= ${build_dir}/PKGBUILD | cut -d'=' -f2)
         tag=${ver}-${rel}
-        echo "tag=$tag"
         name=$(find . -name ${{ inputs.pkgname }}*.zst)
-        echo "name=$name"
         arch=$(echo ${name} | rev | cut -d- -f1 | rev | cut -d. -f1)
-        echo "arch=$arch"
         file=${{ inputs.pkgname }}-${tag}-${arch}
-        echo "file=$file"
         echo "sha256_pkg: $(sha256sum ${{ inputs.pkgname }}*.zst | cut -d' ' -f1)" > ${file}.yml
         echo "sha256_sig: $(sha256sum ${{ inputs.pkgname }}*.sig | cut -d' ' -f1)" >> ${file}.yml
         echo "repository: ${{ inputs.repo }}" >> ${file}.yml
