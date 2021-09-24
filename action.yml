@@ -1,6 +1,6 @@
 name: 'Manjaro Package Action'
 description: 'Builds Manjaro Packages'
-branch to 
+
 inputs:
   pkgname:
     description: 'package name'
