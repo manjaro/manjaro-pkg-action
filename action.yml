@@ -68,7 +68,6 @@ runs:
         popd
     - name: install keyrings
       shell: bash
-      shell: bash
       run: |
         sudo git clone --depth 1 https://gitlab.manjaro.org/packages/core/manjaro-keyring.git
         pushd manjaro-keyring
