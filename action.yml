@@ -12,6 +12,10 @@ inputs:
   repo:
     description: 'package repo'
     required: true
+  arch:
+    description: 'package architecture'
+    required: false
+    default: x86_64
   gpg-key:
     descriptio: 'gpg signing key'
     required: true
@@ -108,24 +112,27 @@ runs:
         for p in $(find $PWD -maxdepth 1 -regex '.*\.pkg\.tar\.\(xz\|zst\)'); do
           gpg --pinentry-mode loopback --passphrase "${{ inputs.gpg-passphrase }}" --detach-sign ${p}
         done
-    - name: write boxit transaction file
+    - name: prepare assets transaction
       shell: bash -O extglob {0}
+      env:
+        ARCH: ${{ inputs.arch }}
       run: |
         _ver=$(grep ^pkgver= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
         _rel=$(grep ^pkgrel= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
-        _tag=${_ver}-${_rel} 
-        _file=${{ inputs.pkgname }}-${_tag} 
+        _tag=${_ver}-${_rel}
+        name=$(find . -name ${{ inputs.pkgname }}*.zst)
+        [[ $name == *"-any."* ]] && ARCH=any
+        _file=${{ inputs.pkgname }}-${_tag}-${_arch}
         echo "sha256_pkg: $(sha256sum ${{ inputs.pkgname }}*.zst | cut -d' ' -f1)" > ${_file}.yml
         echo "sha256_sig: $(sha256sum ${{ inputs.pkgname }}*.sig | cut -d' ' -f1)" >> ${_file}.yml
         echo "repository: ${{ inputs.repo }}" >> ${_file}.yml
         echo "branch: ${{ inputs.branch }}" >> ${_file}.yml
+        tar -czvf ${_file}.tar ./${_file}*.zst ./${_file}*.sig ./${_file}.yml
         echo "TAG=${_tag}" >>$GITHUB_ENV
-        echo "FILE=${_file}" >>$GITHUB_ENV
     - name: publish package
       shell: bash -O extglob {0}
       run: |
-        tar -czvf ${{ env.FILE }}.tar ./${{ env.FILE }}*.zst ./${{ env.FILE }}*.sig ./${{ env.FILE }}.yml
         echo ${{ github.token }} | gh auth login --with-token
         gh release create ${{ env.TAG }} --title ${{ env.TAG }} --repo ${{ github.repository }} --notes "automated release" || echo "release already exists"
         GITHUB_LINK=https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ env.TAG }}
-        gh release upload ${{ env.TAG }} --repo ${GITHUB_REPOSITORY} --clobber ./*.zst ./*.sig ./${{ env.FILE }}.tar
+        gh release upload ${{ env.TAG }} --repo ${GITHUB_REPOSITORY} --clobber ./*.zst ./*.sig ./*.tar
