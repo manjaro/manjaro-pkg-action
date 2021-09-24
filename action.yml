@@ -12,6 +12,13 @@ inputs:
     description: 'branch to build against'
     default: unstable
     required: false
+  custom-repo:
+    description: 'custom repo'
+    required: false
+  multilib:
+    description: 'build multilib package'
+    required: false
+    default: false
   repo:
     description: 'package repo'
     required: true
@@ -112,7 +119,11 @@ runs:
     - name: build package
       shell: bash
       run: |
-        sudo chrootbuild -p ${{ inputs.pkgname }}
+        build_opt=("-p ${{ inputs.pkgname }}" "-b ${{ inputs.branch }}")
+        [[ ! -z ${{ inputs.custom-repo ]] && build_opt+=("-k ${{ inputs.custom-repo}}")
+        [[ "${{ inputs.multilib }}" == "true" ]] && build_opt+=("-m")
+        echo "cmd=[chrootbuild ${build_opt[@]}]"
+        sudo chrootbuild ${build_opt[@]}
     - name: sign package
       shell: bash -O extglob {0}
       run: |      
