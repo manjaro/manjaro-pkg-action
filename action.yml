@@ -2,8 +2,8 @@ name: 'Manjaro Package Action'
 description: 'Builds Manjaro Packages'
 
 inputs:
-  pkgname:
-    description: 'package name'
+  package:
+    description: 'PKGBUILD repo name'
     required: true
   source:
     description: 'custom package repo source'
@@ -113,13 +113,13 @@ runs:
         if [[ ! -z "${{ inputs.source }}" ]]; then
           source=${{ inputs.source }}
         else
-          source=https://gitlab.manjaro.org/packages/${{ inputs.repo }}/${{ inputs.pkgname }}.git
+          source=https://gitlab.manjaro.org/packages/${{ inputs.repo }}/${{ inputs.package }}.git
         fi
         sudo git clone ${source}
     - name: build package
       shell: bash
       run: |
-        build_opt=("-p ${{ inputs.pkgname }}" "-b ${{ inputs.branch }}")
+        build_opt=("-p ${{ inputs.package }}" "-b ${{ inputs.branch }}")
         [[ ! -z "${{ inputs.custom-repo }}" ]] && build_opt+=("-k ${{ inputs.custom-repo }}")
         [[ "${{ inputs.multilib }}" == "true" ]] && build_opt+=("-m")
         echo "cmd=chrootbuild ${build_opt[@]}"
@@ -134,23 +134,24 @@ runs:
     - name: prepare assets transaction
       shell: bash -O extglob {0}
       run: |
-        build_dir=/var/lib/chrootbuild/build/${{ inputs.pkgname }}
-        ver=$(grep ^pkgver= ${build_dir}/PKGBUILD | cut -d'=' -f2)
-        rel=$(grep ^pkgrel= ${build_dir}/PKGBUILD | cut -d'=' -f2)
-        tag=${ver}-${rel}
-        name=$(find . -name ${{ inputs.pkgname }}*.zst)
-        arch=$(echo ${name} | rev | cut -d- -f1 | rev | cut -d. -f1)
-        file=${{ inputs.pkgname }}-${tag}-${arch}
-        echo "sha256_pkg: $(sha256sum ${{ inputs.pkgname }}*.zst | cut -d' ' -f1)" > ${file}.yml
-        echo "sha256_sig: $(sha256sum ${{ inputs.pkgname }}*.sig | cut -d' ' -f1)" >> ${file}.yml
-        echo "repository: ${{ inputs.repo }}" >> ${file}.yml
-        echo "branch: ${{ inputs.branch }}" >> ${file}.yml
-        tar -czvf ${file}.tar ./${_file}*.zst ./${file}*.sig ./${file}.yml
+        source /var/lib/chrootbuild/build/${{ inputs.package }}
+        tag=${pkgver}-${pkgrel}
+        for p in ${pkgname[@]}; do
+          name=$(find . -name ${p}*.zst)
+          arch=$(echo ${name} | rev | cut -d- -f1 | rev | cut -d. -f1)
+          file=${pkgname}-${tag}-${arch}
+          btf=${file}.yml # boxit transaction file
+          echo "sha256_pkg: $(sha256sum ${pkgname}*.zst | cut -d' ' -f1)" > ${btf}
+          echo "sha256_sig: $(sha256sum ${pkgname}*.sig | cut -d' ' -f1)" >> ${btf}
+          echo "repository: ${{ inputs.repo }}" >> ${btf}
+          echo "branch: ${{ inputs.branch }}" >> ${btf}
+          tar -czvf ${file}.tar ./${_file}*.zst ./${file}*.sig ./${btf}
+        done
         echo "TAG=${tag}" >>$GITHUB_ENV
     - name: publish package
       shell: bash -O extglob {0}
       run: |
-        release=${{ inputs.pkgname }}-${{ env.TAG }}
+        release=${{ inputs.package }}-${{ env.TAG }}
         echo ${{ github.token }} | gh auth login --with-token
         gh release create ${release} --title ${release} --repo ${{ github.repository }} --notes "automated release" || echo "release already exists"
         GITHUB_LINK=https://github.com/${GITHUB_REPOSITORY}/releases/download/${release}
