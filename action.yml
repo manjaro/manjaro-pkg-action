@@ -23,6 +23,7 @@ runs:
   using: "composite"
   steps:
     - name: install build-dependencies
+      shell: bash
       run: |
         sudo apt-get update
         sudo apt-get install \
@@ -40,6 +41,7 @@ runs:
         sudo pip3 install meson
         sudo pip3 install ninja
     - name: install pacman
+      shell: bash
       env:
         PACMAN_VERSION: 6.0.1
       run: |
@@ -65,6 +67,8 @@ runs:
         sudo touch /etc/pacman.d/mirrorlist
         popd
     - name: install keyrings
+      shell: bash
+      shell: bash
       run: |
         sudo git clone --depth 1 https://gitlab.manjaro.org/packages/core/manjaro-keyring.git
         pushd manjaro-keyring
@@ -83,6 +87,7 @@ runs:
         sudo pacman-key --init
         sudo pacman-key --populate archlinux manjaro
     - name: install manjaro-chrootbuild
+      shell: bash
       run: |
         sudo git clone --depth 1 https://gitlab.manjaro.org/tools/development-tools/manjaro-chrootbuild
         pushd manjaro-chrootbuild
@@ -90,9 +95,11 @@ runs:
         echo "PACKAGER = Manjaro Build Server <build@manjaro.org>" | sudo tee -a /etc/makepkg.conf > /dev/null
         popd
     - name: clone package repo
+      shell: bash
       run: |
         sudo git clone https://gitlab.manjaro.org/packages/${{ inputs.repo }}/${{ inputs.pkgname }}.git
     - name: build package
+      shell: bash
       run: |
         sudo chrootbuild -p ${{ inputs.pkgname }}
     - name: sign package
