@@ -134,7 +134,7 @@ runs:
     - name: prepare assets transaction
       shell: bash -O extglob {0}
       run: |
-        source /var/lib/chrootbuild/build/${{ inputs.package }}
+        source /var/lib/chrootbuild/build/${{ inputs.package }}/PKGBUILD
         tag=${pkgver}-${pkgrel}
         for p in ${pkgname[@]}; do
           name=$(find . -name ${p}*.zst)
