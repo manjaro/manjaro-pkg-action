@@ -12,10 +12,6 @@ inputs:
   repo:
     description: 'package repo'
     required: true
-  arch:
-    description: 'package architecture'
-    required: false
-    default: x86_64
   gpg-key:
     descriptio: 'gpg signing key'
     required: true
@@ -118,21 +114,19 @@ runs:
         done
     - name: prepare assets transaction
       shell: bash -O extglob {0}
-      env:
-        ARCH: ${{ inputs.arch }}
       run: |
-        _ver=$(grep ^pkgver= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
-        _rel=$(grep ^pkgrel= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
-        _tag=${_ver}-${_rel}
+        ver=$(grep ^pkgver= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
+        rel=$(grep ^pkgrel= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
+        tag=${ver}-${rel}
         name=$(find . -name ${{ inputs.pkgname }}*.zst)
-        [[ $name == *"-any."* ]] && ARCH=any
-        _file=${{ inputs.pkgname }}-${_tag}-${_arch}
-        echo "sha256_pkg: $(sha256sum ${{ inputs.pkgname }}*.zst | cut -d' ' -f1)" > ${_file}.yml
-        echo "sha256_sig: $(sha256sum ${{ inputs.pkgname }}*.sig | cut -d' ' -f1)" >> ${_file}.yml
-        echo "repository: ${{ inputs.repo }}" >> ${_file}.yml
-        echo "branch: ${{ inputs.branch }}" >> ${_file}.yml
-        tar -czvf ${_file}.tar ./${_file}*.zst ./${_file}*.sig ./${_file}.yml
-        echo "TAG=${_tag}" >>$GITHUB_ENV
+        arch=$(echo ${name} | rev | cut -d- -f1 | rev | cut -d. -f1)
+        file=${{ inputs.pkgname }}-${tag}-${arch}
+        echo "sha256_pkg: $(sha256sum ${{ inputs.pkgname }}*.zst | cut -d' ' -f1)" > ${file}.yml
+        echo "sha256_sig: $(sha256sum ${{ inputs.pkgname }}*.sig | cut -d' ' -f1)" >> ${file}.yml
+        echo "repository: ${{ inputs.repo }}" >> ${file}.yml
+        echo "branch: ${{ inputs.branch }}" >> ${file}.yml
+        tar -czvf ${file}.tar ./${_file}*.zst ./${file}*.sig ./${file}.yml
+        echo "TAG=${tag}" >>$GITHUB_ENV
     - name: publish package
       shell: bash -O extglob {0}
       run: |
