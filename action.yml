@@ -1,0 +1,125 @@
+name: 'Manjaro Package Action'
+description: 'Builds Manjaro Packages'
+branch to 
+inputs:
+  pkgname:
+    description: 'package name'
+    required: true
+  branch:
+    description: 'branch to build against'
+    default: unstable
+    required: false
+  repo:
+    description: 'package repo'
+    required: true
+  gpg-key:
+    descriptio: 'gpg signing key'
+    required: true
+  gpg-passphrase:
+    description: 'gpg passphrase'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: install build-dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install \
+        build-essential \
+        cmake \
+        fakeroot \
+        git \
+        libarchive-dev \
+        libarchive-tools \
+        libcurl4-openssl-dev \
+        libgpgme-dev \
+        libssl-dev \
+        zip \
+        python3-pip
+        sudo pip3 install meson
+        sudo pip3 install ninja
+    - name: install pacman
+      env:
+        PACMAN_VERSION: 6.0.1
+      run: |
+        sudo git clone --depth 1 https://gitlab.manjaro.org/packages/core/pacman.git
+        pushd pacman
+        sudo wget https://sources.archlinux.org/other/pacman/pacman-${PACMAN_VERSION}.tar.xz
+        sudo tar -xvf pacman-${PACMAN_VERSION}.tar.xz
+        pushd pacman-${PACMAN_VERSION}
+        sudo patch -p1 -i ../pacman-sync-first-option.patch
+        sudo meson --prefix=/usr \
+                    --buildtype=plain \
+                    -Ddoc=disabled \
+                    -Ddoxygen=enabled \
+                    -Dscriptlet-shell=/usr/bin/bash \
+                    -Dldconfig=/usr/bin/ldconfig \
+                    build
+        sudo meson compile -C build
+        sudo meson install -C build
+        popd
+        sudo install -m644 pacman.conf /etc/pacman.conf
+        sudo install -m644 makepkg.conf /etc/
+        sudo mkdir -p /etc/pacman.d
+        sudo touch /etc/pacman.d/mirrorlist
+        popd
+    - name: install keyrings
+      run: |
+        sudo git clone --depth 1 https://gitlab.manjaro.org/packages/core/manjaro-keyring.git
+        pushd manjaro-keyring
+        sudo install -dm755 /usr/share/pacman/keyrings/
+        sudo install -m0644 manjaro.gpg /usr/share/pacman/keyrings/
+        sudo install -m0644 manjaro-trusted /usr/share/pacman/keyrings/
+        sudo install -m0644 manjaro-trusted /usr/share/pacman/keyrings/
+        popd
+         
+        sudo git clone --depth 1 https://gitlab.archlinux.org/archlinux/archlinux-keyring.git
+        pushd archlinux-keyring
+        sudo install -m0644 archlinux.gpg /usr/share/pacman/keyrings/
+        sudo install -m0644 archlinux-trusted /usr/share/pacman/keyrings/
+        sudo install -m0644 archlinux-revoked /usr/share/pacman/keyrings/
+        popd
+        sudo pacman-key --init
+        sudo pacman-key --populate archlinux manjaro
+    - name: install manjaro-chrootbuild
+      run: |
+        sudo git clone --depth 1 https://gitlab.manjaro.org/tools/development-tools/manjaro-chrootbuild
+        pushd manjaro-chrootbuild
+        sudo ./install.sh
+        echo "PACKAGER = Manjaro Build Server <build@manjaro.org>" | sudo tee -a /etc/makepkg.conf > /dev/null
+        popd
+    - name: clone package repo
+      run: |
+        sudo git clone https://gitlab.manjaro.org/packages/${{ inputs.repo }}/${{ inputs.pkgname }}.git
+    - name: build package
+      run: |
+        sudo chrootbuild -p ${{ inputs.pkgname }}
+    - name: sign package
+      shell: bash -O extglob {0}
+      run: |      
+        cat <(echo -e "${{ inputs.gpg-key }}" | base64 --decode) | gpg --batch --import &>/dev/null
+        for p in $(find $PWD -maxdepth 1 -regex '.*\.pkg\.tar\.\(xz\|zst\)'); do
+          gpg --pinentry-mode loopback --passphrase "${{ inputs.gpg-passphrase }}" --detach-sign ${p}
+        done
+    - name: write boxit transaction file
+      shell: bash -O extglob {0}
+      run: |
+        _ver=$(grep ^pkgver= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
+        _rel=$(grep ^pkgrel= ${{ inputs.pkgname }}/PKGBUILD | cut -d'=' -f2)
+        _tag=${_ver}-${_rel} 
+        _file=${{ inputs.pkgname }}-${_tag} 
+        echo "sha256_pkg: $(sha256sum ${{ inputs.pkgname }}*.zst | cut -d' ' -f1)" > ${_file}.yml
+        echo "sha256_sig: $(sha256sum ${{ inputs.pkgname }}*.sig | cut -d' ' -f1)" >> ${_file}.yml
+        echo "repository: ${{ inputs.repo }}" >> ${_file}.yml
+        echo "branch: ${{ inputs.branch }}" >> ${_file}.yml
+        echo "TAG=${_tag}" >>$GITHUB_ENV
+        echo "FILE=${_file}" >>$GITHUB_ENV
+    - name: publish package
+      shell: bash -O extglob {0}
+      run: |
+        tar -czvf ${{ env.FILE }}.tar ./${{ env.FILE }}*.zst ./${{ env.FILE }}*.sig ./${{ env.FILE }}.yml
+        echo ${{ github.token }} | gh auth login --with-token
+        gh release create ${{ env.TAG }} --title ${{ env.TAG }} --repo ${{ github.repository }} --notes "automated release" || echo "release already exists"
+        GITHUB_LINK=https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ env.TAG }}
+        gh release upload ${{ env.TAG }} --repo ${GITHUB_REPOSITORY} --clobber ./*.zst ./*.sig ./${{ env.FILE }}.tar
