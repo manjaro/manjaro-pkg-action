@@ -5,6 +5,9 @@ inputs:
   pkgname:
     description: 'package name'
     required: true
+  source:
+    description: 'custom package repo source'
+    required: false
   branch:
     description: 'branch to build against'
     default: unstable
@@ -100,7 +103,12 @@ runs:
     - name: clone package repo
       shell: bash
       run: |
-        sudo git clone https://gitlab.manjaro.org/packages/${{ inputs.repo }}/${{ inputs.pkgname }}.git
+        if [[ ! -z ${{ inputs.source }} ]]; then
+          source=${{ inputs.source }}
+        else
+          source=https://gitlab.manjaro.org/packages/${{ inputs.repo }}/${{ inputs.pkgname }}.git
+        fi
+        sudo git clone ${source}
     - name: build package
       shell: bash
       run: |
