@@ -176,6 +176,8 @@ runs:
         ssh-agent -a /tmp/ssh_agent.sock > /dev/null
     - name: push to boxit
       shell: bash -O extglob {0}
+      env:
+        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       run: |
         if [ -z "${{ inputs.boxit-host }}" ] || [ -z "${{ inputs.boxit-target }}" ] || [ -z "${{ inputs.ssh-key }}" ]; then 
           echo "## not (all) credentials given for boxit push"
