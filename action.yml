@@ -89,22 +89,23 @@ runs:
     - name: install keyrings
       shell: bash
       run: |
+        sudo install -dm755 /usr/share/pacman/keyrings/
         sudo git clone --depth 1 https://gitlab.manjaro.org/packages/core/manjaro-keyring.git
         pushd manjaro-keyring
-        sudo install -dm755 /usr/share/pacman/keyrings/
-        sudo install -m0644 manjaro.gpg /usr/share/pacman/keyrings/
-        sudo install -m0644 manjaro-trusted /usr/share/pacman/keyrings/
-        sudo install -m0644 manjaro-trusted /usr/share/pacman/keyrings/
+          sudo install -m0644 manjaro.gpg /usr/share/pacman/keyrings/
+          sudo install -m0644 manjaro-trusted /usr/share/pacman/keyrings/
+          sudo install -m0644 manjaro-trusted /usr/share/pacman/keyrings/
         popd
         sudo rm -rf manjaro-keyring
-         
-        sudo git clone --depth 1 https://gitlab.archlinux.org/archlinux/archlinux-keyring.git
+        mkdir -p archlinux-keyring
         pushd archlinux-keyring
-        sudo install -m0644 archlinux.gpg /usr/share/pacman/keyrings/
-        sudo install -m0644 archlinux-trusted /usr/share/pacman/keyrings/
-        sudo install -m0644 archlinux-revoked /usr/share/pacman/keyrings/
+          wget https://archlinux.org/packages/core/any/archlinux-keyring/download -O /tmp/archlinux-keyring.tar.zst
+          tar --use-compress-program=unzstd --strip-components=4 --wildcards -xvf /tmp/archlinux-keyring.tar.zst usr/share/pacman/keyrings/*
+          sudo install -m0644 archlinux.gpg /usr/share/pacman/keyrings/
+          sudo install -m0644 archlinux-trusted /usr/share/pacman/keyrings/
+          sudo install -m0644 archlinux-revoked /usr/share/pacman/keyrings/
         popd
-        sudo rm -rf arhclinux-keyring
+        sudo rm -rf archlinux-keyring
         sudo pacman-key --init
         sudo pacman-key --populate archlinux manjaro
     - name: install manjaro-chrootbuild
