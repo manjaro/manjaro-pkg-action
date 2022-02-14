@@ -151,8 +151,8 @@ runs:
           arch=$(echo ${name} | rev | cut -d- -f1 | rev | cut -d. -f1)
           file=${p}-${tag}-${arch}
           btf=${file}.yml # boxit transaction file
-          echo "sha256_pkg: $(sha256sum ${p}*.zst | cut -d' ' -f1)" > ${btf}
-          echo "sha256_sig: $(sha256sum ${p}*.sig | cut -d' ' -f1)" >> ${btf}
+          echo "sha256_pkg: $(sha256sum ${name} | cut -d' ' -f1)" > ${btf}
+          echo "sha256_sig: $(sha256sum ${name}.sig | cut -d' ' -f1)" >> ${btf}
           echo "repository: ${{ inputs.repo }}" >> ${btf}
           echo "branch: ${{ inputs.branch }}" >> ${btf}
           tar -czvf ${file}.tar ./${file}*.zst ./${file}*.sig ./${btf}
