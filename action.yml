@@ -131,7 +131,8 @@ runs:
         sudo chrootbuild ${build_opt[@]}
     - name: sign packages
       shell: bash -O extglob {0}
-      run: |      
+      run: |
+        cd ${{ inputs.source_folder }} 
         cat <(echo -e "${{ inputs.gpg-key }}" | base64 --decode) | gpg --batch --import &>/dev/null
         for p in $(find $PWD -maxdepth 1 -regex '.*\.pkg\.tar\.\(xz\|zst\)'); do
           gpg --pinentry-mode loopback --passphrase "${{ inputs.gpg-passphrase }}" --detach-sign ${p}
@@ -139,6 +140,7 @@ runs:
     - name: prepare assets transaction
       shell: bash -O extglob {0}
       run: |
+        cd ${{ inputs.source_folder }}
         tag=${{inputs.release_tag}}
         while read p; do
           name=$(find . -name ${p}*.zst)
@@ -150,7 +152,7 @@ runs:
           echo "repository: ${{ inputs.repo }}" >> ${btf}
           echo "branch: ${{ inputs.branch }}" >> ${btf}
           tar -czvf ${file}.tar ./${file}*.zst ./${file}*.sig ./${btf}
-        done < ${{inputs.packages_list}}.list
+        done < ${{inputs.package_list}}.list
         echo "TAG=${tag}" >>$GITHUB_ENV
     - name: publish package
       shell: bash -O extglob {0}
@@ -159,6 +161,7 @@ runs:
         echo ${{ github.token }} | gh auth login --with-token
         gh release create ${release} --title ${release} --repo ${{ github.repository }} --notes "automated release" || echo "release already exists"
         GITHUB_LINK=https://github.com/${GITHUB_REPOSITORY}/releases/download/${release}
+        cd ${{ inputs.source_folder }}
         gh release upload ${release} --repo ${GITHUB_REPOSITORY} --clobber ./*.zst ./*.sig ./*.tar
     - name: prepare upload
       shell: bash
