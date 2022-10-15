@@ -8,8 +8,11 @@ inputs:
   release_tag:
     description: 'version of release'
     required: true
-  source:
-    description: 'repo source'
+  source_url:
+    description: 'full repo source url'
+    required: true
+  source_folder:
+    description: 'folder name of git repo'
     required: true
   branch:
     description: 'branch to build against'
@@ -116,9 +119,9 @@ runs:
     - name: clone packages repo
       shell: bash
       run: |
-        source=${{ inputs.source }}
+        source=${{ inputs.source_url }}
         sudo git clone ${source}
-        cd ${source}
+        cd ${{ inputs.source_folder }}
     - name: build package_list
       shell: bash
       run: |
