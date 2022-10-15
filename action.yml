@@ -19,7 +19,7 @@ inputs:
     description: 'custom repo'
     required: false
   gpg-key:
-    descriptio: 'gpg signing key'
+    description: 'gpg signing key'
     required: true
   gpg-passphrase:
     description: 'gpg passphrase'
@@ -136,7 +136,7 @@ runs:
       shell: bash -O extglob {0}
       run: |
         tag=${{inputs.release_tag}}
-        for p in ${{inputs.package_list}}; do
+        while read p; do
           name=$(find . -name ${p}*.zst)
           arch=$(echo ${name} | rev | cut -d- -f1 | rev | cut -d. -f1)
           file=${p}-${tag}-${arch}
@@ -146,7 +146,7 @@ runs:
           echo "repository: ${{ inputs.repo }}" >> ${btf}
           echo "branch: ${{ inputs.branch }}" >> ${btf}
           tar -czvf ${file}.tar ./${file}*.zst ./${file}*.sig ./${btf}
-        done
+        done < ${{inputs.packages_list}}.list
         echo "TAG=${tag}" >>$GITHUB_ENV
     - name: publish package
       shell: bash -O extglob {0}
