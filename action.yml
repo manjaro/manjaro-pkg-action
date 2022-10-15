@@ -121,13 +121,13 @@ runs:
       run: |
         source=${{ inputs.source_url }}
         sudo git clone ${source}
-        cd ${{ inputs.source_folder }}
     - name: build package_list
       shell: bash
       run: |
         build_opt=("-l ${{ inputs.package_list }}" "-b ${{ inputs.branch }}")
         [[ ! -z "${{ inputs.custom-repo }}" ]] && build_opt+=("-k ${{ inputs.custom-repo }}")
         echo "cmd=chrootbuild ${build_opt[@]}"
+        cd ${{ inputs.source_folder }}
         sudo chrootbuild ${build_opt[@]}
     - name: sign packages
       shell: bash -O extglob {0}
