@@ -118,6 +118,7 @@ runs:
       run: |
         source=${{ inputs.source }}
         sudo git clone ${source}
+        cd ${source}
     - name: build package_list
       shell: bash
       run: |
