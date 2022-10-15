@@ -2,26 +2,19 @@ name: 'Manjaro Package Action'
 description: 'Builds Manjaro Packages'
 
 inputs:
-  package:
-    description: 'PKGBUILD repo name'
+  package_list:
+    description: 'name of the build-list file'
     required: true
   source:
-    description: 'custom package repo source'
-    required: false
+    description: 'repo source'
+    required: true
   branch:
     description: 'branch to build against'
-    default: unstable
+    default: stable
     required: false
   custom-repo:
     description: 'custom repo'
     required: false
-  multilib:
-    description: 'build multilib package'
-    required: false
-    default: false
-  repo:
-    description: 'package repo'
-    required: true
   gpg-key:
     descriptio: 'gpg signing key'
     required: true
@@ -117,24 +110,19 @@ runs:
         echo "PACKAGER = Manjaro Build Server <build@manjaro.org>" | sudo tee -a /etc/makepkg.conf > /dev/null
         popd
         sudo rm -rf manjaro-chrootbuild
-    - name: clone package repo
+    - name: clone packages repo
       shell: bash
       run: |
-        if [[ ! -z "${{ inputs.source }}" ]]; then
-          source=${{ inputs.source }}
-        else
-          source=https://gitlab.manjaro.org/packages/${{ inputs.repo }}/${{ inputs.package }}.git
-        fi
+        source=${{ inputs.source }}
         sudo git clone ${source}
-    - name: build package
+    - name: build package_list
       shell: bash
       run: |
-        build_opt=("-p ${{ inputs.package }}" "-b ${{ inputs.branch }}")
+        build_opt=("-l ${{ inputs.package_list }}" "-b ${{ inputs.branch }}")
         [[ ! -z "${{ inputs.custom-repo }}" ]] && build_opt+=("-k ${{ inputs.custom-repo }}")
-        [[ "${{ inputs.multilib }}" == "true" ]] && build_opt+=("-m")
         echo "cmd=chrootbuild ${build_opt[@]}"
         sudo chrootbuild ${build_opt[@]}
-    - name: sign package
+    - name: sign packages
       shell: bash -O extglob {0}
       run: |      
         cat <(echo -e "${{ inputs.gpg-key }}" | base64 --decode) | gpg --batch --import &>/dev/null
@@ -144,10 +132,9 @@ runs:
     - name: prepare assets transaction
       shell: bash -O extglob {0}
       run: |
-        source /var/lib/chrootbuild/build/${{ inputs.package }}/PKGBUILD
-        tag=${pkgver}-${pkgrel}
-        for p in ${pkgname[@]}; do
-          name=$(find . -name ${p}-${tag}*.zst)
+        tag=${{inputs.release_tag}}
+        for p in ${{inputs.package_list}}; do
+          name=$(find . -name ${p}*.zst)
           arch=$(echo ${name} | rev | cut -d- -f1 | rev | cut -d. -f1)
           file=${p}-${tag}-${arch}
           btf=${file}.yml # boxit transaction file
@@ -161,7 +148,7 @@ runs:
     - name: publish package
       shell: bash -O extglob {0}
       run: |
-        release=${{ inputs.package }}-${{ env.TAG }}
+        release=${{ inputs.package_list }}-${{ env.TAG }}
         echo ${{ github.token }} | gh auth login --with-token
         gh release create ${release} --title ${release} --repo ${{ github.repository }} --notes "automated release" || echo "release already exists"
         GITHUB_LINK=https://github.com/${GITHUB_REPOSITORY}/releases/download/${release}
