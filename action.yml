@@ -5,6 +5,9 @@ inputs:
   package_list:
     description: 'name of the build-list file'
     required: true
+  release_tag:
+    description: 'version of release'
+    required: true
   source:
     description: 'repo source'
     required: true
