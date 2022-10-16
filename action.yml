@@ -121,6 +121,7 @@ runs:
       run: |
         source=${{ inputs.source_url }}
         sudo git clone ${source}
+        sudo chown -R runner:runner ${{ inputs.source_folder }}
     - name: build package_list
       shell: bash
       run: |
@@ -135,7 +136,7 @@ runs:
         cd ${{ inputs.source_folder }}
         cat <(echo -e "${{ inputs.gpg-key }}" | base64 --decode) | gpg --batch --import &>/dev/null
         for p in $(find $PWD -maxdepth 1 -regex '.*\.pkg\.tar\.\(xz\|zst\)'); do
-          sudo gpg --pinentry-mode loopback --passphrase "${{ inputs.gpg-passphrase }}" --detach-sign ${p}
+          gpg --pinentry-mode loopback --passphrase "${{ inputs.gpg-passphrase }}" --detach-sign ${p}
         done
     - name: prepare assets transaction
       shell: bash -O extglob {0}
@@ -151,7 +152,7 @@ runs:
           echo "sha256_sig: $(sha256sum ${name}.sig | cut -d' ' -f1)" >> ${btf}
           echo "repository: ${{ inputs.repo }}" >> ${btf}
           echo "branch: ${{ inputs.branch }}" >> ${btf}
-          sudo tar -czvf ${file}.tar ./${file}*.zst ./${file}*.sig ./${btf}
+          tar -czvf ${file}.tar ./${file}*.zst ./${file}*.sig ./${btf}
         done < ${{inputs.package_list}}.list
         echo "TAG=${tag}" >>$GITHUB_ENV
     - name: publish package
