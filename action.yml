@@ -163,7 +163,9 @@ runs:
         gh release create ${release} --title ${release} --repo ${{ github.repository }} --notes "automated release" || echo "release already exists"
         GITHUB_LINK=https://github.com/${GITHUB_REPOSITORY}/releases/download/${release}
         cd ${{ inputs.source_folder }}
-        gh release upload ${release} --repo ${GITHUB_REPOSITORY} --clobber ./*.zst ./*.sig
+        zip "${{ inputs.package_list }}-${{ env.TAG }}.zip" ./*.zst ./*sig
+        zip "${{ inputs.package_list }}-${{ env.TAG }}-logs.zip" /home/runner/.chrootbuild-logs/*
+        gh release upload ${release} --repo ${GITHUB_REPOSITORY} --clobber ./${{ inputs.package_list }}-${{ env.TAG }}.zip ./${{ inputs.package_list }}-${{ env.TAG }}-logs.zip
     - name: prepare upload
       shell: bash
       run: |
