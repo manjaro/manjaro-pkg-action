@@ -129,8 +129,9 @@ runs:
       shell: bash
       run: |
         build_opt=("-l ${{ inputs.package_list }}" "-b ${{ inputs.branch }}")
+        [ ! -z ${{ inputs.custom-repo-url }} ] && CUSTOM_REPO_URL="${{ inputs.custom-repo-url }}"
         [ -z ${{ inputs.custom-repo-url }} ] && CUSTOM_REPO_URL='Include = \/etc\/pacman\.d\/mirrorlist'
-        [[ ! -z "${{ inputs.custom-repo }}" ]] &&  sudo sed -i -e "s/\[core\]/\[${{ inputs.custom-repo }}\]\nSigLevel = PackageRequired\n${CUSTOM_REPO_URL}\n\n\[core\]/" /etc/chrootbuild/pacman.conf.*
+        [ ! -z "${{ inputs.custom-repo }}" ] &&  sudo sed -i -e "s/\[core\]/\[${{ inputs.custom-repo }}\]\nSigLevel = PackageRequired\n${CUSTOM_REPO_URL}\n\n\[core\]/" /etc/chrootbuild/pacman.conf.*
         echo "cmd=chrootbuild ${build_opt[@]}"
         cd ${{ inputs.source_folder }}
         sudo chrootbuild ${build_opt[@]}
