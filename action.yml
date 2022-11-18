@@ -13,7 +13,10 @@ inputs:
     default: unstable
     required: false
   custom-repo:
-    description: 'custom repo'
+    description: 'name a custom repo to be prioritized above the default ones'
+    required: false
+  custom-repo-url:
+    description: 'name a Server URL of your custom repo'
     required: false
   multilib:
     description: 'build multilib package'
@@ -130,7 +133,9 @@ runs:
       shell: bash
       run: |
         build_opt=("-p ${{ inputs.package }}" "-b ${{ inputs.branch }}")
-        [[ ! -z "${{ inputs.custom-repo }}" ]] && build_opt+=("-k ${{ inputs.custom-repo }}")
+        [ -z ${{ inputs.custom-repo-url }} ] && CUSTOM_REPO_URL='Include = \/etc\/pacman\.d\/mirrorlist'
+        [[ ! -z "${{ inputs.custom-repo }}" ]] &&  sudo sed -i -e "s/\[core\]/\[${{ inputs.custom-repo }}\]\nSigLevel = PackageRequired\n${CUSTOM_REPO_URL}\n\n\[core\]/" /usr/share/manjaro-tools/pacman-multilib.conf
+        fi
         [[ "${{ inputs.multilib }}" == "true" ]] && build_opt+=("-m")
         echo "cmd=chrootbuild ${build_opt[@]}"
         sudo chrootbuild ${build_opt[@]}
