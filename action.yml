@@ -164,7 +164,8 @@ runs:
         cd ${{ inputs.source_folder }}
         zip "${{ inputs.package_list }}-${{ env.TAG }}.zip" ./*.zst ./*sig
         zip "${{ inputs.package_list }}-${{ env.TAG }}-logs.zip" /home/runner/.chrootbuild-logs/*
-        gh release upload ${release} --repo ${GITHUB_REPOSITORY} --clobber ./${{ inputs.package_list }}-${{ env.TAG }}.zip ./${{ inputs.package_list }}-${{ env.TAG }}-logs.zip
+        gh release upload ${release} --repo ${GITHUB_REPOSITORY} --clobber ./${{ inputs.package_list }}-${{ env.TAG }}-logs.zip
+        gh release upload ${release} --repo ${GITHUB_REPOSITORY} --clobber ./${{ inputs.package_list }}-${{ env.TAG }}.zip
     - name: prepare upload
       shell: bash
       run: |
